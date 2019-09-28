@@ -6,9 +6,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"time"
+	"runtime"
 )
 
 func main() {
+
+	runtime.GOMAXPROCS(4)
 
 	start := time.Now()
 
@@ -24,18 +27,28 @@ func main() {
 		"s",
 	}
 
+	numComplete := 0
+
 	for _, symbol := range stockSymbols {
-		resp, err := http.Get("http://dev.markitondemand.com/Api/v2/Quote?symbol=" + symbol)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		defer resp.Body.Close() // close connection when done
+		go func(symbol string) { // we pass the symbol value to the goroutine because go creates
+			// the routines immediately and if it isn't passed, it'll most probably pick up the last value of symbol
+			resp, err := http.Get("http://dev.markitondemand.com/Api/v2/Quote?symbol=" + symbol)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			defer resp.Body.Close() // close connection when done
 
-		body, _ := ioutil.ReadAll(resp.Body)
-		quote := new(QuoteResponse)
-		xml.Unmarshal(body, &quote)
+			body, _ := ioutil.ReadAll(resp.Body)
+			quote := new(QuoteResponse)
+			xml.Unmarshal(body, &quote)
 
-		fmt.Printf("%s: %.2f\n", quote.Name, quote.LastPrice)
+			fmt.Printf("%s: %.2f\n", quote.Name, quote.LastPrice)
+			numComplete++
+		}(symbol)
+	}
+
+	for numComplete < len(stockSymbols) {
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	elapsed := time.Since(start)
