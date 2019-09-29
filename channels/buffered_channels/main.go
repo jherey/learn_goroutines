@@ -18,8 +18,17 @@ func main() {
 
 	close(ch)
 
-	for i := 0; i < len(words); i++ {
-		fmt.Print(<-ch + " ")
+	// for {
+	// 	if msg, ok := <- ch; ok {
+	// 		fmt.Print(msg + " ")
+	// 	} else {
+	// 		break
+	// 	}
+	// }
+
+	//	OR
+	for msg := range ch {
+		fmt.Print(msg + " ")
 	}
 
 	// ch <- "test"	// we can't pass a msg into the channel anymore as it's closed.
